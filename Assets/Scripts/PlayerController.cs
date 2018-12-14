@@ -40,14 +40,13 @@ public class PlayerController : MonoBehaviour {
         Move(inputDir, running);
         wallRun();
         falling();
-        Slide();
         if (Input.GetKeyDown(KeyCode.Space))
         {
             jump();
         }
         float animationSpeedPercent = ((running) ? currentSpeed / runSpeed : currentSpeed / walkSpeed * .5f);
         anim.SetFloat("Speed", animationSpeedPercent, speedSmoothTime, Time.deltaTime);
-        
+        Slide();
     }
 
     void Move(Vector2 inputDir, bool running)
@@ -66,7 +65,6 @@ public class PlayerController : MonoBehaviour {
 
         controller.Move(velocity * Time.deltaTime);
         currentSpeed = new Vector2(controller.velocity.x, controller.velocity.z).magnitude;
-
         if (controller.isGrounded)
         {
             velocityY = 0;
@@ -127,20 +125,16 @@ public class PlayerController : MonoBehaviour {
     {
         int SlideMask = LayerMask.GetMask("Slide");
         RaycastHit hit;
-
-        if(Physics.Raycast(transform.position+BodyRay,transform.forward,out hit, 3, SlideMask) && currentSpeed > 0.7f)
+        if (Physics.Raycast(transform.position + BodyRay, transform.forward, out hit, 3, SlideMask) && currentSpeed > 2.5f)
         {
             anim.SetTrigger("IsSliding");
-            controller.height = 1;
-        }
-        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Slide"))
-        {
-
+            Physics.IgnoreCollision(controller, hit.collider);
         }
         else
         {
             anim.ResetTrigger("IsSliding");
-            controller.height = 2;
-        }
+            Physics.IgnoreCollision(controller, hit.collider, false);
+        }       
     }
+
 }

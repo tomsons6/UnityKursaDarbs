@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ public class PlayerController : MonoBehaviour {
     public float wallRunHeight = 2;
     public float turnSmoothTime = 0.2f;
     float turnSmoothVelocity;
-    
+
     public float speedSmoothTime = 0.1f;
     float speedSmothVelocity;
     float currentSpeed;
@@ -42,13 +43,24 @@ public class PlayerController : MonoBehaviour {
         falling();
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            jump();
+            JumpInPlace();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            SprintJump();
+        }
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            RunJump();
         }
         float animationSpeedPercent = ((running) ? currentSpeed / runSpeed : currentSpeed / walkSpeed * .5f);
         anim.SetFloat("Speed", animationSpeedPercent, speedSmoothTime, Time.deltaTime);
         Slide();
-    }
+        
 
+    }
+    #region Move
     void Move(Vector2 inputDir, bool running)
     {
         if (inputDir != Vector2.zero)
@@ -72,6 +84,8 @@ public class PlayerController : MonoBehaviour {
 
 
     }
+    #endregion
+    #region Fall
     void falling()
     {
         down = new Ray(transform.position, -Vector3.up);
@@ -90,42 +104,67 @@ public class PlayerController : MonoBehaviour {
 
 
     }
-    void jump()
+    #endregion
+    #region Jump
+    void JumpInPlace()
     {
-        if (controller.isGrounded)
+        if (controller.isGrounded && currentSpeed == 0f)
         {
             anim.SetTrigger("IsJumping");
-            float jumpVelocity = Mathf.Sqrt(-2 * gravity * jumpHeight);
-            velocityY = jumpVelocity;
         }
         
     }
+    void RunJump()
+    {
+        if (controller.isGrounded && currentSpeed > 1.7f && currentSpeed < 2.1f )
+        {
+            anim.SetTrigger("RunJump");
+            float jumpVelocity = Mathf.Sqrt(-2 * gravity * jumpHeight);
+            velocityY = jumpVelocity;
+        }
+    }
+    void SprintJump()
+    {
+        if (controller.isGrounded && currentSpeed > 2.7f)
+        {
+            anim.SetTrigger("SprintJump");
+            float jumpVelocity = Mathf.Sqrt(-3 * gravity * jumpHeight);
+            velocityY = jumpVelocity;
+        }
+    }
+    #endregion
+    #region WallRun and Slide
     void wallRun() {  
         int WallRunMask = LayerMask.GetMask("WallRun");
-        Renderer rend;
         RaycastHit hit;
-        if(Physics.Raycast(transform.position,transform.forward,out hit,1, WallRunMask))          
+        if(Physics.Raycast(transform.position,transform.right,out hit,1, WallRunMask) && Input.GetKey(KeyCode.Space))          
         {
-            rend =  hit.collider.GetComponent<Renderer>();
-            Vector3 augsts = rend.bounds.center;
-            Debug.Log(augsts);
-            Debug.Log(hit.collider.bounds.size.ToString());
-
-            Debug.Log("Fignja");
-            anim.SetTrigger("WallRun");
+            anim.SetBool("Mirror", true);
+            anim.SetTrigger("WallRun");         
             float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
             velocityY = wallRunVelocity;
+            anim.ResetTrigger("RunJump");
+            anim.ResetTrigger("SprintJump");
         }
         else
         {
             anim.ResetTrigger("WallRun");
+        }
+        if (Physics.Raycast(transform.position, -transform.right, out hit, 1, WallRunMask) && Input.GetKey(KeyCode.Space))
+        {
+            anim.SetBool("Mirror", false);
+            anim.SetTrigger("WallRun");          
+            float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
+            velocityY = wallRunVelocity;
+            anim.ResetTrigger("RunJump");
+            anim.ResetTrigger("SprintJump");
         }
     }
     void Slide()
     {
         int SlideMask = LayerMask.GetMask("Slide");
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + BodyRay, transform.forward, out hit, 3, SlideMask) && currentSpeed > 2.5f)
+        if (Physics.Raycast(transform.position + BodyRay, transform.forward, out hit, 4, SlideMask) && currentSpeed > 2.5f)
         {
             anim.SetTrigger("IsSliding");
             Physics.IgnoreCollision(controller, hit.collider);
@@ -136,5 +175,5 @@ public class PlayerController : MonoBehaviour {
             Physics.IgnoreCollision(controller, hit.collider, false);
         }       
     }
-
+    #endregion
 }

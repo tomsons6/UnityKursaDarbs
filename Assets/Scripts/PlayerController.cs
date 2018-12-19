@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour {
 
@@ -39,8 +40,10 @@ public class PlayerController : MonoBehaviour {
         Vector2 inputDir = input.normalized;
         bool running = Input.GetKey(KeyCode.LeftShift);
         Move(inputDir, running);
-        wallRun();
         falling();
+        wallRun();
+        float animationSpeedPercent = ((running) ? currentSpeed / runSpeed : currentSpeed / walkSpeed * .5f);
+        anim.SetFloat("Speed", animationSpeedPercent, speedSmoothTime, Time.deltaTime);
         if (Input.GetKeyDown(KeyCode.Space))
         {
             JumpInPlace();
@@ -54,11 +57,7 @@ public class PlayerController : MonoBehaviour {
         {
             RunJump();
         }
-        float animationSpeedPercent = ((running) ? currentSpeed / runSpeed : currentSpeed / walkSpeed * .5f);
-        anim.SetFloat("Speed", animationSpeedPercent, speedSmoothTime, Time.deltaTime);
         Slide();
-        
-
     }
     #region Move
     void Move(Vector2 inputDir, bool running)
@@ -134,37 +133,41 @@ public class PlayerController : MonoBehaviour {
     }
     #endregion
     #region WallRun and Slide
-    void wallRun() {  
+    //Sito wallRun vajag handlot citadi, sobrid sitas ir miskaste, fix if have time....
+    void wallRun() {
+
         int WallRunMask = LayerMask.GetMask("WallRun");
-        RaycastHit hit;
-        if(Physics.Raycast(transform.position,transform.right,out hit,1, WallRunMask) && Input.GetKey(KeyCode.Space))          
+        if (Physics.Raycast(transform.position, -transform.right, 1, WallRunMask) && Input.GetKey(KeyCode.Space))
         {
-            anim.SetBool("Mirror", true);
-            anim.SetTrigger("WallRun");         
-            float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
-            velocityY = wallRunVelocity;
+            anim.SetBool("IsFalling", false);
             anim.ResetTrigger("RunJump");
             anim.ResetTrigger("SprintJump");
+            anim.SetBool("Mirror", false);
+            anim.SetTrigger("WallRun");
+            float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
+            velocityY = wallRunVelocity;
         }
         else
         {
             anim.ResetTrigger("WallRun");
         }
-        if (Physics.Raycast(transform.position, -transform.right, out hit, 1, WallRunMask) && Input.GetKey(KeyCode.Space))
+        if (Physics.Raycast(transform.position,transform.right,1, WallRunMask) && Input.GetKey(KeyCode.Space))          
         {
-            anim.SetBool("Mirror", false);
-            anim.SetTrigger("WallRun");          
-            float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
-            velocityY = wallRunVelocity;
+            anim.SetBool("IsFalling", false);
             anim.ResetTrigger("RunJump");
             anim.ResetTrigger("SprintJump");
+            anim.SetBool("Mirror", true);
+            anim.SetTrigger("WallRun");         
+            float wallRunVelocity = Mathf.Sqrt(-1 * gravity * wallRunHeight);
+            velocityY = wallRunVelocity;
         }
+
     }
     void Slide()
     {
         int SlideMask = LayerMask.GetMask("Slide");
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + BodyRay, transform.forward, out hit, 4, SlideMask) && currentSpeed > 2.5f)
+        if (Physics.Raycast(transform.position + BodyRay, transform.forward, out hit, 4, SlideMask) && currentSpeed > 2.5f && controller.isGrounded)
         {
             anim.SetTrigger("IsSliding");
             Physics.IgnoreCollision(controller, hit.collider);
@@ -176,4 +179,15 @@ public class PlayerController : MonoBehaviour {
         }       
     }
     #endregion
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag == "Lose")
+        {
+            SceneManager.LoadScene(2);
+        }
+        if(other.gameObject.tag == "WinArea")
+        {
+            SceneManager.LoadScene(3);
+        }
+    }
 }

@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - WallRun
+  - Lose
+  - WinArea
   layers:
   - Default
   - TransparentFX
